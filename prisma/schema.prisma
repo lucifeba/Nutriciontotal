@@ -1,0 +1,430 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Rol {
+  NUTRICIONISTA
+  PACIENTE
+}
+
+enum Sexo {
+  MASCULINO
+  FEMENINO
+  OTRO
+}
+
+enum GrupoIntercambio {
+  LACTEOS
+  FRUTAS
+  VERDURAS_HORTALIZAS
+  CEREALES_TUBERCULOS
+  LEGUMBRES
+  CARNES_PESCADOS_HUEVOS
+  GRASAS
+  AZUCARES
+  BEBIDAS
+  FRUTOS_SECOS
+  CONDIMENTOS
+}
+
+enum EstadoPlan {
+  BORRADOR
+  ACTIVO
+  COMPLETADO
+  CANCELADO
+}
+
+enum TipoPlan {
+  SEMANAL
+  QUINCENAL
+}
+
+enum TipoComida {
+  DESAYUNO
+  MEDIA_MANANA
+  ALMUERZO
+  MERIENDA
+  CENA
+  RECENA
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  nombre    String
+  apellidos String
+  rol       Rol
+  avatar    String?
+  telefono  String?
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nutricionista Nutricionista?
+  paciente      Paciente?
+
+  mensajesEnviados  Mensaje[] @relation("MensajesEnviados")
+  mensajesRecibidos Mensaje[] @relation("MensajesRecibidos")
+}
+
+model Nutricionista {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  numColegiado    String?
+  especialidad    String?
+  clinica         String?
+  direccion       String?
+  whatsappNumber  String? @default("+34676002647")
+  bio             String?
+
+  user           User              @relation(fields: [userId], references: [id])
+  pacientes      Paciente[]
+  planes         PlanNutricional[]
+  recetasCustom  Receta[]
+}
+
+model Paciente {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  nutricionistaId       String
+  fechaNacimiento       DateTime?
+  sexo                  Sexo?
+  altura                Float?
+  pesoActual            Float?
+  pesoObjetivo          Float?
+  imc                   Float?
+  porcentajeGrasa       Float?
+  circunferenciaCintura Float?
+  circunferenciaCadera  Float?
+  activo                Boolean   @default(true)
+  fechaAlta             DateTime  @default(now())
+  encuestaToken         String?   @unique @default(cuid())
+  encuestaCompletada    Boolean   @default(false)
+
+  user          User              @relation(fields: [userId], references: [id])
+  nutricionista Nutricionista     @relation(fields: [nutricionistaId], references: [id])
+  anamnesis     Anamnesis?
+  planes        PlanNutricional[]
+  mediciones    Medicion[]
+  conversacion  Conversacion?
+}
+
+model Anamnesis {
+  id          String   @id @default(cuid())
+  pacienteId  String   @unique
+  completadaAt DateTime @default(now())
+
+  // Datos personales
+  ocupacion          String?
+  estadoCivil        String?
+  numHijos           Int?
+  nivelEstudios      String?
+
+  // Historial médico
+  patologias         String[]
+  alergias           String[]
+  intolerancias      String[]
+  medicamentos       String[]
+  suplementos        String[]
+  cirugias           String[]
+  antecedentesFamiliares String[]
+
+  // Hábitos alimentarios
+  comidasDia         Int?
+  picoteo            Boolean?
+  cocinaEnCasa       Boolean?
+  comeEnTrabajo      Boolean?
+  prefAlimentarias   String?
+  alimentosNoDeseados String?
+  alimentosFavoritos String?
+  consumoAlcohol     String?
+  consumoTabaco      String?
+  consumoAgua        String?
+
+  // Registro dietético
+  registroDietetico  Json?
+
+  // Actividad física
+  actividadFisica    String?
+  frecuenciaEjercicio String?
+  tipoEjercicio      String?
+  duracionEjercicio  String?
+  horasSueno         Float?
+  calidadSueno       String?
+
+  // Objetivos
+  objetivoPrincipal  String?
+  objetivoSecundario String?
+  motivacion         String?
+  expectativas       String?
+
+  // Aspecto psicológico
+  relacionComida     String?
+  episodiosAtracones Boolean?
+  trastornoAlimentario Boolean?
+  nivelEstres        String?
+  estadoAnimo        String?
+
+  // Consentimiento
+  consentimiento     Boolean   @default(false)
+  consentimientoFecha DateTime?
+
+  paciente Paciente @relation(fields: [pacienteId], references: [id])
+}
+
+model Medicion {
+  id                    String   @id @default(cuid())
+  pacienteId            String
+  fecha                 DateTime @default(now())
+  peso                  Float?
+  porcentajeGrasa       Float?
+  masaMuscular          Float?
+  circunferenciaCintura Float?
+  circunferenciaCadera  Float?
+  notas                 String?
+
+  paciente Paciente @relation(fields: [pacienteId], references: [id])
+}
+
+model Alimento {
+  id               String           @id @default(cuid())
+  nombre           String
+  grupoIntercambio GrupoIntercambio
+  subgrupo         String?
+
+  // Macronutrientes por 100g
+  calorias      Float
+  proteinas     Float
+  carbohidratos Float
+  grasas        Float
+  fibra         Float?
+
+  // Micronutrientes
+  sodio      Float?
+  potasio    Float?
+  calcio     Float?
+  hierro     Float?
+  vitaminaA  Float?
+  vitaminaC  Float?
+  vitaminaD  Float?
+  vitaminaB12 Float?
+  acFolico   Float?
+
+  // Ración de intercambio
+  racionIntercambio  Float
+  descripcionRacion  String?
+
+  // Flags
+  esAptoVegetariano   Boolean @default(false)
+  esAptoVegano        Boolean @default(false)
+  contieneLactosa     Boolean @default(false)
+  contieneGluten      Boolean @default(false)
+  contieneFrutosSecos Boolean @default(false)
+  contieneHuevo       Boolean @default(false)
+  contienePescado     Boolean @default(false)
+  contieneMarisco     Boolean @default(false)
+  contieneSoja        Boolean @default(false)
+
+  // Metadata
+  temporada String[]
+  region    String?
+
+  recetaAlimentos     RecetaAlimento[]
+  planComidaAlimentos PlanComidaAlimento[]
+}
+
+model Receta {
+  id                String   @id @default(cuid())
+  nombre            String
+  descripcion       String?
+  instrucciones     String
+  tiempoPreparacion Int
+  tiempoCoccion     Int
+  dificultad        String
+  raciones          Int      @default(4)
+  imagen            String?
+  tipoComida        String[]
+  categoria         String?
+  estiloEspanol     Boolean  @default(true)
+  region            String?
+
+  // Valores nutricionales por ración
+  caloriasPorRacion      Float?
+  proteinasPorRacion     Float?
+  carbohidratosPorRacion Float?
+  grasasPorRacion        Float?
+  fibraPorRacion         Float?
+
+  // Flags aptos
+  esAptoVegetariano   Boolean @default(false)
+  esAptoVegano        Boolean @default(false)
+  contieneLactosa     Boolean @default(false)
+  contieneGluten      Boolean @default(false)
+  contieneFrutosSecos Boolean @default(false)
+  contieneHuevo       Boolean @default(false)
+  contienePescado     Boolean @default(false)
+  contieneMarisco     Boolean @default(false)
+  contieneSoja        Boolean @default(false)
+
+  nutricionistaId String?
+
+  nutricionista    Nutricionista?     @relation(fields: [nutricionistaId], references: [id])
+  alimentos        RecetaAlimento[]
+  planComidaRecetas PlanComidaReceta[]
+}
+
+model RecetaAlimento {
+  id         String  @id @default(cuid())
+  recetaId   String
+  alimentoId String
+  cantidad   Float
+  unidad     String?
+  notas      String?
+
+  receta   Receta   @relation(fields: [recetaId], references: [id], onDelete: Cascade)
+  alimento Alimento @relation(fields: [alimentoId], references: [id])
+}
+
+model PlanNutricional {
+  id                  String       @id @default(cuid())
+  nombre              String
+  pacienteId          String
+  nutricionistaId     String
+  estado              EstadoPlan   @default(BORRADOR)
+  tipoPlan            TipoPlan     @default(SEMANAL)
+  numPlanificaciones  Int          @default(1)
+  fechaInicio         DateTime?
+  fechaFin            DateTime?
+  caloriasObjetivo    Float
+  proteinasObjetivo   Float
+  carbohidratosObjetivo Float
+  grasasObjetivo      Float
+  fibraObjetivo       Float?
+  intercambiosConfig  Json?
+  comidasActivas      TipoComida[]
+  notas               String?
+  observaciones       String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  paciente        Paciente        @relation(fields: [pacienteId], references: [id])
+  nutricionista   Nutricionista   @relation(fields: [nutricionistaId], references: [id])
+  planificaciones Planificacion[]
+}
+
+model Planificacion {
+  id         String  @id @default(cuid())
+  planId     String
+  numeroPlan Int
+  nombre     String?
+
+  plan PlanNutricional @relation(fields: [planId], references: [id], onDelete: Cascade)
+  dias PlanDia[]
+}
+
+model PlanDia {
+  id              String  @id @default(cuid())
+  planificacionId String
+  diaSemana       Int
+  nombre          String?
+  caloriasTotal   Float?
+  proteinasTotal  Float?
+  carbohidratosTotal Float?
+  grasasTotal     Float?
+  fibraTotal      Float?
+
+  planificacion Planificacion @relation(fields: [planificacionId], references: [id], onDelete: Cascade)
+  comidas       PlanComida[]
+}
+
+model PlanComida {
+  id          String     @id @default(cuid())
+  planDiaId   String
+  tipoComida  TipoComida
+  hora        String?
+  notas       String?
+  orden       Int        @default(0)
+  caloriasTotal      Float?
+  proteinasTotal     Float?
+  carbohidratosTotal Float?
+  grasasTotal        Float?
+  fibraTotal         Float?
+
+  planDia   PlanDia              @relation(fields: [planDiaId], references: [id], onDelete: Cascade)
+  alimentos PlanComidaAlimento[]
+  recetas   PlanComidaReceta[]
+}
+
+model PlanComidaAlimento {
+  id               String            @id @default(cuid())
+  planComidaId     String
+  alimentoId       String
+  cantidad         Float
+  intercambios     Float?
+  notas            String?
+  esIntercambiable Boolean           @default(true)
+  grupoIntercambio GrupoIntercambio?
+  alternativas     Json?
+
+  planComida PlanComida @relation(fields: [planComidaId], references: [id], onDelete: Cascade)
+  alimento   Alimento   @relation(fields: [alimentoId], references: [id])
+}
+
+model PlanComidaReceta {
+  id           String @id @default(cuid())
+  planComidaId String
+  recetaId     String
+  raciones     Float  @default(1)
+  notas        String?
+
+  planComida PlanComida @relation(fields: [planComidaId], references: [id], onDelete: Cascade)
+  receta     Receta     @relation(fields: [recetaId], references: [id])
+}
+
+model Conversacion {
+  id              String    @id @default(cuid())
+  pacienteId      String    @unique
+  ultimoMensaje   String?
+  ultimaActividad DateTime  @default(now())
+  noLeidos        Int       @default(0)
+
+  paciente Paciente  @relation(fields: [pacienteId], references: [id])
+  mensajes Mensaje[]
+}
+
+model Mensaje {
+  id              String   @id @default(cuid())
+  conversacionId  String
+  remitenteId     String
+  destinatarioId  String
+  contenido       String
+  tipo            String   @default("texto")
+  archivoUrl      String?
+  leido           Boolean  @default(false)
+  leidoAt         DateTime?
+  createdAt       DateTime @default(now())
+
+  conversacion Conversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+  remitente    User         @relation("MensajesEnviados", fields: [remitenteId], references: [id])
+  destinatario User         @relation("MensajesRecibidos", fields: [destinatarioId], references: [id])
+}
+
+model WhatsAppLog {
+  id        String   @id @default(cuid())
+  telefono  String
+  tipo      String
+  contenido String?
+  estado    String
+  messageId String?
+  createdAt DateTime @default(now())
+}
