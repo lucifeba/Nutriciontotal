@@ -1,71 +1,70 @@
 # NutriPlan Pro - Gestion Nutricional Profesional
 
-Plataforma web para nutricionistas que permite gestionar pacientes, crear planes nutricionales personalizados con sistema de intercambios, y mantener comunicacion directa con los pacientes.
+Plataforma web para nutricionistas: gestion de pacientes, planes nutricionales con sistema de intercambios, anamnesis online y comunicacion directa.
 
-## Tecnologias
+## Stack
 
-- **Frontend**: Next.js 14 (App Router), React 18, Tailwind CSS, Radix UI
+- **Frontend**: Next.js 14, React 18, Tailwind CSS, Radix UI
 - **Backend**: tRPC, NextAuth.js, Prisma ORM
-- **Base de datos**: PostgreSQL
-- **Otros**: Zod, Zustand, React Hook Form, SuperJSON
+- **Base de datos**: PostgreSQL (Neon serverless)
+- **Despliegue**: Vercel
 
-## Requisitos previos
+---
 
-- [Node.js](https://nodejs.org/) v18 o superior
-- [PostgreSQL](https://www.postgresql.org/) v14 o superior
-- npm (incluido con Node.js)
+## Despliegue en produccion (Vercel + Neon)
 
-## Instalacion y puesta en marcha
+### Paso 1: Crear base de datos en Neon (gratis)
 
-### 1. Clonar el repositorio
+1. Ve a [neon.tech](https://neon.tech) y crea una cuenta
+2. Crea un nuevo proyecto (elige region `eu-central-1` para Europa)
+3. Copia las dos connection strings que te da Neon:
+   - **Pooled connection** → sera tu `DATABASE_URL`
+   - **Direct connection** → sera tu `DIRECT_URL`
+
+### Paso 2: Desplegar en Vercel (gratis)
+
+1. Ve a [vercel.com](https://vercel.com) y conecta tu cuenta de GitHub
+2. Haz clic en **"Add New Project"**
+3. Importa el repositorio `Nutriciontotal`
+4. En la seccion **Environment Variables**, anade estas variables:
+
+| Variable | Valor |
+|---|---|
+| `DATABASE_URL` | La connection string **pooled** de Neon (con `?sslmode=require&pgbouncer=true`) |
+| `DIRECT_URL` | La connection string **direct** de Neon (con `?sslmode=require`) |
+| `NEXTAUTH_SECRET` | Genera uno con `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | `https://tu-proyecto.vercel.app` |
+| `NEXT_PUBLIC_APP_URL` | `https://tu-proyecto.vercel.app` |
+| `NEXT_PUBLIC_APP_NAME` | `NutriPlan Pro` |
+
+5. Haz clic en **Deploy**
+
+### Paso 3: Crear tablas y cargar datos
+
+Despues del primer deploy, ejecuta en tu maquina local (con las mismas variables de entorno de Neon):
 
 ```bash
+# Clona el repo si no lo tienes
 git clone https://github.com/lucifeba/Nutriciontotal.git
 cd Nutriciontotal
-```
-
-### 2. Instalar dependencias
-
-```bash
 npm install
-```
 
-### 3. Configurar variables de entorno
-
-```bash
+# Copia y configura el .env con las credenciales de Neon
 cp .env.example .env
-```
+# Edita .env con los datos de Neon
 
-Edita el archivo `.env` con tus datos:
-
-```env
-DATABASE_URL="postgresql://usuario:contraseña@localhost:5432/nutriplan"
-NEXTAUTH_SECRET="genera-una-clave-secreta-aqui"
-NEXTAUTH_URL="http://localhost:3000"
-```
-
-> Para generar un secret seguro puedes usar: `openssl rand -base64 32`
-
-### 4. Crear la base de datos
-
-```bash
-# Crear la base de datos en PostgreSQL
-psql -U postgres -c "CREATE DATABASE nutriplan;"
-
-# Aplicar el esquema
+# Crea las tablas en la base de datos
 npx prisma db push
 
-# Cargar datos iniciales (alimentos, recetas de ejemplo, usuarios demo)
+# Carga los datos iniciales (alimentos, recetas, usuarios demo)
 npm run db:seed
 ```
 
-### 5. Iniciar la aplicacion
+### Listo
 
-```bash
-npm run dev
-```
+Tu app esta en `https://tu-proyecto.vercel.app`. Cada vez que hagas push a GitHub, Vercel redespliega automaticamente.
 
-Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
+---
 
 ## Credenciales de demo
 
@@ -74,18 +73,34 @@ Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 | Nutricionista | `nutricionista@nutriplanpro.com` | `nutriplan123` |
 | Paciente | `paciente@nutriplanpro.com` | `paciente123` |
 
+---
+
+## Desarrollo local
+
+```bash
+git clone https://github.com/lucifeba/Nutriciontotal.git
+cd Nutriciontotal
+npm install
+cp .env.example .env         # editar con tus datos
+npx prisma db push           # crear tablas
+npm run db:seed              # cargar datos iniciales
+npm run dev                  # http://localhost:3000
+```
+
+> Para desarrollo local puedes usar la misma base de datos de Neon, o una PostgreSQL local.
+
 ## Funcionalidades
 
 - **Gestion de pacientes**: Alta, edicion, historial de mediciones
 - **Encuesta nutricional**: Anamnesis completa en 8 pasos que el paciente rellena online
-- **Planificador nutricional**: Creacion de planes semanales/quincenales con objetivos de macronutrientes
-- **Sistema de intercambios**: Busqueda de alimentos con alternativas del mismo grupo nutricional
-- **Base de datos de alimentos**: 81+ alimentos con informacion nutricional completa, alergenos y temporada
+- **Planificador nutricional**: Planes semanales/quincenales con objetivos de macronutrientes
+- **Sistema de intercambios**: Alimentos alternativos del mismo grupo nutricional
+- **Base de datos de alimentos**: 81+ alimentos con informacion nutricional, alergenos y temporada
 - **Recetas**: 15+ recetas de cocina espanola con ingredientes y valores por racion
 - **Mensajeria**: Chat entre nutricionista y paciente
-- **Generacion de PDF**: Exportacion de planes nutricionales
+- **PDF**: Exportacion de planes nutricionales
 
-## Scripts disponibles
+## Scripts
 
 | Comando | Descripcion |
 |---|---|
@@ -93,42 +108,28 @@ Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 | `npm run build` | Build de produccion |
 | `npm start` | Servidor de produccion |
 | `npm run lint` | Linter |
-| `npm run db:generate` | Generar cliente Prisma |
-| `npm run db:push` | Aplicar esquema a la base de datos |
+| `npm run db:push` | Crear/actualizar tablas en la BD |
 | `npm run db:seed` | Cargar datos iniciales |
-| `npm run db:studio` | Abrir Prisma Studio (explorador visual de la BD) |
+| `npm run db:studio` | Prisma Studio (explorador visual) |
 | `npm run db:reset` | Resetear BD y recargar datos |
 
 ## Estructura del proyecto
 
 ```
 src/
-├── app/                    # Rutas de Next.js (App Router)
-│   ├── (auth)/             # Paginas de login y registro
-│   ├── (dashboard)/        # Panel del nutricionista y paciente
-│   ├── api/                # API routes (auth, tRPC, WhatsApp, PDF)
-│   └── encuesta/           # Formulario de anamnesis para pacientes
+├── app/                    # Rutas (Next.js App Router)
+│   ├── (auth)/             # Login y registro
+│   ├── (dashboard)/        # Panel nutricionista y paciente
+│   ├── api/                # API (auth, tRPC, WhatsApp, PDF)
+│   └── encuesta/           # Formulario de anamnesis
 ├── components/             # Componentes React
-│   ├── common/             # Componentes reutilizables
-│   ├── encuesta/           # Wizard de encuesta nutricional
-│   ├── layout/             # Header, Sidebar
-│   ├── planificador/       # Planificador nutricional
-│   └── ui/                 # Componentes base (Radix UI)
 ├── hooks/                  # Custom hooks
 ├── lib/                    # Utilidades, constantes, validadores
-├── server/                 # Logica de servidor (tRPC routers, servicios)
+├── server/                 # tRPC routers y servicios
 ├── stores/                 # Estado global (Zustand)
-└── types/                  # Definiciones de tipos TypeScript
+└── types/                  # Tipos TypeScript
 prisma/
 ├── schema.prisma           # Esquema de base de datos
-├── seed.ts                 # Script de seed principal
-└── seed/                   # Datos de seed (alimentos, recetas)
+├── seed.ts                 # Script de seed
+└── seed/                   # Datos (alimentos, recetas)
 ```
-
-## Docker (opcional)
-
-```bash
-docker-compose up -d
-```
-
-Esto levanta PostgreSQL y la aplicacion en `http://localhost:3000`.
