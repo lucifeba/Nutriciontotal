@@ -5,6 +5,7 @@ import { recetasRouter } from './routers/recetas';
 import { planesRouter } from './routers/planes';
 import { encuestasRouter } from './routers/encuestas';
 import { mensajesRouter } from './routers/mensajes';
+import { perfilRouter } from './routers/perfil';
 
 export const appRouter = router({
   pacientes: pacientesRouter,
@@ -13,6 +14,7 @@ export const appRouter = router({
   planes: planesRouter,
   encuestas: encuestasRouter,
   mensajes: mensajesRouter,
+  perfil: perfilRouter,
 });
 
 export type AppRouter = typeof appRouter;

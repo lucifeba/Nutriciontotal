@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc/client";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Target, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 
 const estadoColor: Record<string, string> = {
   BORRADOR: "bg-gray-100 text-gray-700",
