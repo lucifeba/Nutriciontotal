@@ -2,7 +2,9 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { alimentosSeed } from './seed/alimentos';
 import { alimentosSeed2 } from './seed/alimentos2';
+import { alimentosSeed3 } from './seed/alimentos3';
 import { recetasSeed } from './seed/recetas';
+import { recetasSeed2 } from './seed/recetas2';
 
 const prisma = new PrismaClient();
 
@@ -98,7 +100,7 @@ async function main() {
 
   // Seed alimentos
   console.log('🍎 Insertando alimentos...');
-  const allAlimentos = [...alimentosSeed, ...alimentosSeed2];
+  const allAlimentos = [...alimentosSeed, ...alimentosSeed2, ...alimentosSeed3];
 
   const createdAlimentos: Record<string, string> = {};
 
@@ -139,7 +141,8 @@ async function main() {
   console.log('🍳 Insertando recetas...');
   let recetaCount = 0;
 
-  for (const receta of recetasSeed as any[]) {
+  const allRecetas = [...recetasSeed, ...recetasSeed2];
+  for (const receta of allRecetas as any[]) {
     try {
       const ingredientesData = receta.ingredientes
         .map((ing: any) => {
